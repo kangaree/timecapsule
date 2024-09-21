@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Capsule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+            max-width: 600px;
+            margin: auto;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        input[type="datetime-local"], input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #2c3e50;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #34495e;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+        }
+        #messageAlert {
+            color: red;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            textarea {
+                height: 80px;
+            }
+            button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Create Your Time Capsule</h1>
+    <textarea id="message" placeholder="Write your message here..."></textarea>
+    <input type="datetime-local" id="releaseTime">
+    <input type="text" id="userPassword" placeholder="Optional: Enter a password for encryption">
+    <button id="save">Save Time Capsule</button>
+    <div id="messageAlert"></div>
+
+    <h2>Open Time Capsule</h2>
+    <input type="text" id="decryptionKey" placeholder="Optional: Enter decryption key">
+    <button id="open">Open Time Capsule</button>
+    <div id="output"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+    <script>
+        document.getElementById('save').onclick = function() {
+            const message = document.getElementById('message').value;
+            const releaseTimeInput = document.getElementById('releaseTime').value;
+            const userPassword = document.getElementById('userPassword').value;
+            const releaseTime = new Date(releaseTimeInput).getTime();
+            const messageAlert = document.getElementById('messageAlert');
+
+            // Clear previous messages
+            messageAlert.innerText = '';
+
+            if (!releaseTimeInput || isNaN(releaseTime)) {
+                messageAlert.innerText = 'Please select a valid release date and time.';
+                return;
+            }
+
+            // Use user-specified key or default key
+            const key = userPassword || 'secret-key';
+            const encryptedMessage = CryptoJS.AES.encrypt(message, key).toString();
+
+            // Store in localStorage
+            localStorage.setItem('timeCapsule', encryptedMessage);
+            localStorage.setItem('releaseTime', releaseTime);
+            messageAlert.innerText = 'Your time capsule has been saved!';
+        };
+
+        document.getElementById('open').onclick = function() {
+            const encryptedMessage = localStorage.getItem('timeCapsule');
+            const releaseTime = Number(localStorage.getItem('releaseTime')); // Convert to number
+            const currentTime = new Date().getTime();
+            const decryptionKey = document.getElementById('decryptionKey').value;
+
+            const messageAlert = document.getElementById('messageAlert');
+            messageAlert.innerText = ''; // Clear previous messages
+
+            if (!encryptedMessage || isNaN(releaseTime)) {
+                messageAlert.innerText = 'No time capsule found. Please save one first.';
+                return;
+            }
+
+            if (currentTime < releaseTime) {
+                messageAlert.innerText = 'This message is still locked until ' + new Date(releaseTime).toLocaleString();
+            } else {
+                // Use user-provided key or default key for decryption
+                const key = decryptionKey || 'secret-key';
+                const bytes = CryptoJS.AES.decrypt(encryptedMessage, key);
+                const decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
+
+                if (decryptedMessage) {
+                    document.getElementById('output').innerText = decryptedMessage;
+                } else {
+                    messageAlert.innerText = 'Incorrect key. Unable to decrypt the message.';
+                }
+            }
+        };
+    </script>
+</body>
+</html>
